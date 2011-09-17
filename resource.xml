@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="iso-8859-1" ?>
+<movie version="9">
+    <background color="#000000"/>
+    <frame>
+    <library>
+        <clip id="alum-bg" import="alum-bg.png"/>
+    </library>
+    </frame>
+</movie>

@@ -1,0 +1,4 @@
+-swf9 /var/www/chumby/WordClock.swf
+-main WordClock
+-swf-header 800:600:12:FFFFFF
+-swf-lib resource.swf
