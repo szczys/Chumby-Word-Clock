@@ -1,14 +1,14 @@
 import flash.events.TimerEvent;
+import flash.events.MouseEvent;
 import flash.utils.Timer;
 import flash.display.MovieClip;
-
+import flash.events.Event;
 
 class WordClock
 {
-
 	static var clockTimer:Timer;
 	static var s:flash.display.MovieClip;
-	static var testing;
+	static var mc_background = new MovieClip();
 	static var mc_it:MovieClip = new MovieClip();
 	static var mc_is:MovieClip = new MovieClip();
 	static var mc_half:MovieClip = new MovieClip();
@@ -33,13 +33,36 @@ class WordClock
 	static var mc_twelve:MovieClip = new MovieClip();
 	static var mc_oclock:MovieClip = new MovieClip();
 	
+	
+	
+	static var bg_color;
+	static var fg_color;
+	static var colors = new Array();
+	
+	static var button:MovieClip = new MovieClip();
 	static var mcArray = new Array();
 	static var tracker;
 	
     static function main() {
 		
 		tracker = 0;
+		bg_color = 0;
+		fg_color = 4;
 		
+		colors = [0xFFFFFF,0xC0C0C0,0x808080,0x000000,0xFF0000,0x808000,0x00FF00,0x008000,0x00FFFF,0x008080,0x0000FF,0x000080,0xFF00FF,0x800080];
+		
+		mc_background.graphics.beginFill(colors[bg_color]);
+        mc_background.graphics.drawRect(0,0,800,600);
+        mc_background.graphics.endFill();
+        
+        button.graphics.beginFill(colors[fg_color]);
+        button.graphics.drawRect(390,290,20,20);
+        button.graphics.endFill();
+        
+        flash.Lib.current.addChild(mc_background);
+        
+		
+		/*
 		mc_it = new MovieClip();
 		mc_is = new MovieClip();
 		mc_half = new MovieClip();
@@ -63,6 +86,7 @@ class WordClock
 		mc_eleven = new MovieClip();
 		mc_twelve = new MovieClip();
 		mc_oclock = new MovieClip();
+		*/
 		
 		mcArray = [mc_it,mc_one,mc_two,mc_three,mc_four,mc_five_hours,mc_seven,mc_six,mc_eight,mc_nine,mc_ten_hours,mc_eleven,mc_twelve,mc_is,mc_half,mc_ten,mc_quarter,mc_twenty,mc_five,mc_minutes,mc_past,mc_to,mc_oclock];		
         
@@ -100,10 +124,17 @@ class WordClock
         clockTimer = new Timer(500);
         clockTimer.addEventListener(TimerEvent.TIMER, updateTime);
         clockTimer.start();
+        
+        flash.Lib.current.addChild(button);
+        button.buttonMode = true;
+        
+        //listen for mouse events
+        button.addEventListener(MouseEvent.MOUSE_DOWN, onMouseDownhandler);
+        flash.Lib.current.stage.addEventListener(MouseEvent.MOUSE_UP, onMouseUphandler);
     }
     
     static function createMC(mc:MovieClip,x,y,width,height){
-        mc.graphics.beginFill(0xFF0000);
+        mc.graphics.beginFill(colors[fg_color]);
         mc.graphics.drawRect(x,y,width,height);
         mc.graphics.endFill();
         mc.visible = false;
@@ -204,5 +235,34 @@ class WordClock
     static function updateTime(evt:TimerEvent){
 		showTime();
 		//TODO: only change when minutes have changed		
+	}
+	
+	static function changeBGcolor(colorIndex){
+		var newColorTransform:flash.geom.ColorTransform = mc_background.transform.colorTransform;
+		newColorTransform.color = colors[colorIndex];
+		mc_background.transform.colorTransform = newColorTransform;
+	}
+	
+	static function onNewFrame(event:Event){
+		bg_color += 1;
+		if (bg_color >= colors.length) { bg_color = 0; }
+		changeBGcolor(bg_color);
+	}
+	
+	static function onMouseDownhandler (event:MouseEvent){
+		trace(event.currentTarget.x);
+		trace(event.target.x);
+		button.startDrag(false,new flash.geom.Rectangle(-390,0,780,0));
+		button.addEventListener(Event.ENTER_FRAME, onNewFrame);
+/*
+		bg_color += 1;
+		if (bg_color >= colors.length) { bg_color = 0; }
+		changeBGcolor(bg_color);
+*/
+	}
+	
+	static function onMouseUphandler (event:Event){
+		button.stopDrag();
+		button.removeEventListener(Event.ENTER_FRAME, onNewFrame);
 	}
 }
