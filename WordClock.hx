@@ -42,7 +42,12 @@ class WordClock
 	//Controls
 	static var controls:MovieClip = new MovieClip();
 	static var close_controls:MovieClip = new MovieClip();
-	static var button:MovieClip = new MovieClip();
+	static var red_button:MovieClip = new MovieClip();
+	static var blue_button:MovieClip = new MovieClip();
+	static var green_button:MovieClip = new MovieClip();
+	static var bg_red;
+	static var bg_green;
+	static var bg_blue;
 	
 	static var bg_color;
 	static var fg_color;
@@ -55,12 +60,15 @@ class WordClock
     static function main() {
 		
 		tracker = 0;
-		bg_color = 0;
+		//bg_color = 0;
+		bg_red = 255;
+		bg_green = 255;
+		bg_blue = 255;
 		fg_color = 4;
 		
 		colors = [0xFFFFFF,0xC0C0C0,0x808080,0x000000,0xFF0000,0x808000,0x00FF00,0x008000,0x00FFFF,0x008080,0x0000FF,0x000080,0xFF00FF,0x800080];
 		
-		mc_background.graphics.beginFill(colors[bg_color]);
+		mc_background.graphics.beginFill(rgb2hex(bg_red,bg_green,bg_blue));
         mc_background.graphics.drawRect(0,0,800,600);
         mc_background.graphics.endFill();
         
@@ -109,6 +117,10 @@ class WordClock
         controls.graphics.drawRoundRect(CONTROLS_X,CONTROLS_Y,CONTROLS_WIDTH,CONTROLS_HEIGHT,CONTROLS_SPACING,CONTROLS_SPACING);
         controls.graphics.moveTo(CONTROLS_X+CONTROLS_SPACING,CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*3));
         controls.graphics.lineTo(CONTROLS_X+CONTROLS_WIDTH -CONTROLS_SPACING,CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*3));
+        controls.graphics.moveTo(CONTROLS_X+CONTROLS_SPACING,CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*8));
+        controls.graphics.lineTo(CONTROLS_X+CONTROLS_WIDTH -CONTROLS_SPACING,CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*8));
+        controls.graphics.moveTo(CONTROLS_X+CONTROLS_SPACING,CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*13));
+        controls.graphics.lineTo(CONTROLS_X+CONTROLS_WIDTH -CONTROLS_SPACING,CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*13));
         controls.graphics.endFill();
         flash.Lib.current.addChild(controls);
 
@@ -122,13 +134,27 @@ class WordClock
 		close_controls.graphics.endFill();
 		controls.addChild(close_controls);
 		
-		
-        button.graphics.beginFill(0x808080);
-        button.graphics.drawRect(CONTROLS_X+CONTROLS_SPACING,CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*5),CONTROLS_SPACING*4,CONTROLS_SPACING*4);
-        button.graphics.endFill();
-        button.buttonMode = true;
-        //button.x = 390; //Load slider position from settings here
-        controls.addChild(button);
+		red_button.graphics.beginFill(0xFF0000);
+        red_button.graphics.drawRect(CONTROLS_X+CONTROLS_SPACING,CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*15),CONTROLS_SPACING*4,CONTROLS_SPACING*4);
+        red_button.graphics.endFill();
+        red_button.buttonMode = true;
+        red_button.x = setSliderPosition(bg_red); //Load slider position from settings here
+        controls.addChild(red_button);
+		       
+        green_button.graphics.beginFill(0x00FF00);
+        green_button.graphics.drawRect(CONTROLS_X+CONTROLS_SPACING,CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*10),CONTROLS_SPACING*4,CONTROLS_SPACING*4);
+        green_button.graphics.endFill();
+        green_button.buttonMode = true;
+        green_button.x = setSliderPosition(bg_green); //Load slider position from settings here
+        controls.addChild(green_button);
+        
+        blue_button.graphics.beginFill(0x0000FF);
+        blue_button.graphics.drawRect(CONTROLS_X+CONTROLS_SPACING,CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*5),CONTROLS_SPACING*4,CONTROLS_SPACING*4);
+        blue_button.graphics.endFill();
+        blue_button.buttonMode = true;
+        blue_button.x = setSliderPosition(bg_blue); //Load slider position from settings here
+        controls.addChild(blue_button);
+        
         controls.visible = false; //Hide controls at start-up
                
         //listen for mouse events
@@ -233,23 +259,53 @@ class WordClock
 		//TODO: only change when minutes have changed		
 	}
 	
-	static function changeBGcolor(colorIndex){
+	static function rgb2hex(bg_red,bg_green,bg_blue) {
+		return ((bg_red<<16) | (bg_green<<8) | bg_blue);
+	}
+	
+	static function changeBGcolor(hexColor){
 		var newColorTransform:flash.geom.ColorTransform = mc_background.transform.colorTransform;
-		newColorTransform.color = colors[colorIndex];
+		newColorTransform.color = hexColor;
 		mc_background.transform.colorTransform = newColorTransform;
 	}
 	
-	static function onNewFrame(event:Event){
-		var cents = (button.x*100)/(CONTROLS_WIDTH-6*CONTROLS_SPACING);
-		var color_index = Math.round((colors.length*cents)/100)-1;
-
-		changeBGcolor(color_index);
+	static function onNewFrame(slider:MovieClip) : Dynamic {
+		//if (slider == blue_button){
+			return function(event:Event){
+				var cents = (slider.x*100)/(CONTROLS_WIDTH-6*CONTROLS_SPACING);
+				var color_index = Math.round((255*cents)/100);
+			
+				if (slider == blue_button){
+					bg_blue = color_index;
+					changeBGcolor(rgb2hex(bg_red,bg_green,bg_blue)); //Blue
+				}
+				else if (slider == green_button) {
+					bg_green = color_index;
+					changeBGcolor(rgb2hex(bg_red,bg_green,bg_blue)); //Green
+				}
+				else {
+					bg_red = color_index;
+					changeBGcolor(rgb2hex(bg_red,bg_green,bg_blue)); //Red
+				}
+			}		
+	}
+	
+	static function setSliderPosition(colorValue){
+		return (((colorValue*100)/255)*(CONTROLS_WIDTH-(6*CONTROLS_SPACING)))/100;
 	}
 	
 	static function onMouseDownhandler (event:MouseEvent){
-		if (event.target == button){
-			button.startDrag(false,new flash.geom.Rectangle(0,0,CONTROLS_WIDTH-(6*CONTROLS_SPACING),0));
-			button.addEventListener(Event.ENTER_FRAME, onNewFrame);
+		if (event.target == blue_button){
+			blue_button.startDrag(false,new flash.geom.Rectangle(0,0,CONTROLS_WIDTH-(6*CONTROLS_SPACING),0));
+			blue_button.addEventListener(Event.ENTER_FRAME, onNewFrame(event.target));
+		}
+		if (event.target == green_button){
+			green_button.startDrag(false,new flash.geom.Rectangle(0,0,CONTROLS_WIDTH-(6*CONTROLS_SPACING),0));
+			green_button.addEventListener(Event.ENTER_FRAME, onNewFrame(event.target));
+		}
+		if (event.target == red_button){
+			red_button.startDrag(false,new flash.geom.Rectangle(0,0,CONTROLS_WIDTH-(6*CONTROLS_SPACING),0));
+			red_button.addEventListener(Event.ENTER_FRAME, onNewFrame(event.target));
 		}
 		else if (event.target == s){
 			if ((event.target.mouseX>470) &&(event.target.mouseX<510) && (event.target.mouseY>525) && (event.target.mouseY<560)){
@@ -264,7 +320,7 @@ class WordClock
 	}
 	
 	static function onMouseUphandler (event:Event){
-		button.stopDrag();
-		button.removeEventListener(Event.ENTER_FRAME, onNewFrame);
+		blue_button.stopDrag();
+		blue_button.removeEventListener(Event.ENTER_FRAME, onNewFrame(event.target));
 	}
 }
