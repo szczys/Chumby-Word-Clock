@@ -5,7 +5,13 @@ import flash.display.MovieClip;
 import flash.events.Event;
 
 class WordClock
-{
+{	
+	inline static var CONTROLS_X = 80;
+	inline static var CONTROLS_Y = 60;
+	inline static var CONTROLS_WIDTH = 640;
+	inline static var CONTROLS_HEIGHT = 480;
+	inline static var CONTROLS_SPACING = CONTROLS_HEIGHT/48;
+	
 	static var clockTimer:Timer;
 	static var s:flash.display.MovieClip;
 	static var mc_background = new MovieClip();
@@ -33,13 +39,16 @@ class WordClock
 	static var mc_twelve:MovieClip = new MovieClip();
 	static var mc_oclock:MovieClip = new MovieClip();
 	
-	
+	//Controls
+	static var controls:MovieClip = new MovieClip();
+	static var close_controls:MovieClip = new MovieClip();
+	static var button:MovieClip = new MovieClip();
 	
 	static var bg_color;
 	static var fg_color;
 	static var colors = new Array();
 	
-	static var button:MovieClip = new MovieClip();
+	
 	static var mcArray = new Array();
 	static var tracker;
 	
@@ -55,38 +64,7 @@ class WordClock
         mc_background.graphics.drawRect(0,0,800,600);
         mc_background.graphics.endFill();
         
-        button.graphics.beginFill(colors[fg_color]);
-        button.graphics.drawRect(390,290,20,20);
-        button.graphics.endFill();
-        
         flash.Lib.current.addChild(mc_background);
-        
-		
-		/*
-		mc_it = new MovieClip();
-		mc_is = new MovieClip();
-		mc_half = new MovieClip();
-		mc_ten = new MovieClip();
-		mc_quarter = new MovieClip();
-		mc_twenty = new MovieClip();
-		mc_five = new MovieClip();
-		mc_minutes = new MovieClip();
-		mc_past = new MovieClip();
-		mc_to = new MovieClip();
-		mc_one = new MovieClip();
-		mc_two = new MovieClip();
-		mc_three = new MovieClip();
-		mc_four = new MovieClip();
-		mc_five_hours = new MovieClip();
-		mc_seven = new MovieClip();
-		mc_six = new MovieClip();
-		mc_eight = new MovieClip();
-		mc_nine = new MovieClip();
-		mc_ten_hours = new MovieClip();
-		mc_eleven = new MovieClip();
-		mc_twelve = new MovieClip();
-		mc_oclock = new MovieClip();
-		*/
 		
 		mcArray = [mc_it,mc_one,mc_two,mc_three,mc_four,mc_five_hours,mc_seven,mc_six,mc_eight,mc_nine,mc_ten_hours,mc_eleven,mc_twelve,mc_is,mc_half,mc_ten,mc_quarter,mc_twenty,mc_five,mc_minutes,mc_past,mc_to,mc_oclock];		
         
@@ -125,11 +103,36 @@ class WordClock
         clockTimer.addEventListener(TimerEvent.TIMER, updateTime);
         clockTimer.start();
         
-        flash.Lib.current.addChild(button);
+        //Controls
+        controls.graphics.lineStyle(2,0x000000);
+        controls.graphics.beginFill(0xC0C0C0);
+        controls.graphics.drawRoundRect(CONTROLS_X,CONTROLS_Y,CONTROLS_WIDTH,CONTROLS_HEIGHT,CONTROLS_SPACING,CONTROLS_SPACING);
+        controls.graphics.moveTo(CONTROLS_X+CONTROLS_SPACING,CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*3));
+        controls.graphics.lineTo(CONTROLS_X+CONTROLS_WIDTH -CONTROLS_SPACING,CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*3));
+        controls.graphics.endFill();
+        flash.Lib.current.addChild(controls);
+
+		close_controls.graphics.lineStyle(2,0x000000);
+		close_controls.graphics.beginFill(0x808080);
+		close_controls.graphics.drawRoundRect(CONTROLS_X+CONTROLS_WIDTH-5*CONTROLS_SPACING,CONTROLS_Y+CONTROLS_SPACING,CONTROLS_SPACING*4,CONTROLS_SPACING*4,CONTROLS_SPACING,CONTROLS_SPACING);
+		close_controls.graphics.moveTo(CONTROLS_X+CONTROLS_WIDTH-5*CONTROLS_SPACING+CONTROLS_SPACING/2,CONTROLS_Y+CONTROLS_SPACING+CONTROLS_SPACING/2);
+		close_controls.graphics.lineTo(CONTROLS_X+CONTROLS_WIDTH-CONTROLS_SPACING-CONTROLS_SPACING/2,CONTROLS_Y+5*CONTROLS_SPACING-CONTROLS_SPACING/2);
+		close_controls.graphics.moveTo(CONTROLS_X+CONTROLS_WIDTH-5*CONTROLS_SPACING+CONTROLS_SPACING/2,CONTROLS_Y+5*CONTROLS_SPACING-CONTROLS_SPACING/2);
+		close_controls.graphics.lineTo(CONTROLS_X+CONTROLS_WIDTH-CONTROLS_SPACING-CONTROLS_SPACING/2,CONTROLS_Y+CONTROLS_SPACING+CONTROLS_SPACING/2);
+		close_controls.graphics.endFill();
+		controls.addChild(close_controls);
+		
+		
+        button.graphics.beginFill(0x808080);
+        button.graphics.drawRect(CONTROLS_X+CONTROLS_SPACING,CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*5),CONTROLS_SPACING*4,CONTROLS_SPACING*4);
+        button.graphics.endFill();
         button.buttonMode = true;
-        
+        //button.x = 390; //Load slider position from settings here
+        controls.addChild(button);
+        controls.visible = false; //Hide controls at start-up
+               
         //listen for mouse events
-        button.addEventListener(MouseEvent.MOUSE_DOWN, onMouseDownhandler);
+        flash.Lib.current.addEventListener(MouseEvent.MOUSE_DOWN, onMouseDownhandler);
         flash.Lib.current.stage.addEventListener(MouseEvent.MOUSE_UP, onMouseUphandler);
     }
     
@@ -153,13 +156,6 @@ class WordClock
 	
 	static function showTime(){
 		allOff();
-		/*
-		showMC(mcArray[tracker]);
-		tracker += 1;
-		if (tracker >= mcArray.length){
-			tracker = 0;
-		}
-		*/
 		
 		var curDate:Date = Date.now();
 		var hours = curDate.getHours();
@@ -244,21 +240,27 @@ class WordClock
 	}
 	
 	static function onNewFrame(event:Event){
-		bg_color += 1;
-		if (bg_color >= colors.length) { bg_color = 0; }
-		changeBGcolor(bg_color);
+		var cents = (button.x*100)/(CONTROLS_WIDTH-6*CONTROLS_SPACING);
+		var color_index = Math.round((colors.length*cents)/100)-1;
+
+		changeBGcolor(color_index);
 	}
 	
 	static function onMouseDownhandler (event:MouseEvent){
-		trace(event.currentTarget.x);
-		trace(event.target.x);
-		button.startDrag(false,new flash.geom.Rectangle(-390,0,780,0));
-		button.addEventListener(Event.ENTER_FRAME, onNewFrame);
-/*
-		bg_color += 1;
-		if (bg_color >= colors.length) { bg_color = 0; }
-		changeBGcolor(bg_color);
-*/
+		if (event.target == button){
+			button.startDrag(false,new flash.geom.Rectangle(0,0,CONTROLS_WIDTH-(6*CONTROLS_SPACING),0));
+			button.addEventListener(Event.ENTER_FRAME, onNewFrame);
+		}
+		else if (event.target == s){
+			if ((event.target.mouseX>470) &&(event.target.mouseX<510) && (event.target.mouseY>525) && (event.target.mouseY<560)){
+				controls.visible = true;
+			}
+		}
+		else if (event.target == close_controls){
+			controls.visible = false;
+		}
+		
+
 	}
 	
 	static function onMouseUphandler (event:Event){
