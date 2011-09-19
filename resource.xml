@@ -4,6 +4,7 @@
     <frame>
     <library>
         <clip id="alum-bg" import="alum-bg.png"/>
+        <font name="LiberationSerif" import="/usr/share/fonts/truetype/ttf-liberation/LiberationSerif-Regular.ttf"/>
     </library>
     </frame>
 </movie>

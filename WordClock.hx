@@ -2,6 +2,7 @@ import flash.events.TimerEvent;
 import flash.events.MouseEvent;
 import flash.utils.Timer;
 import flash.display.MovieClip;
+import flash.text.TextField;
 import flash.events.Event;
 
 class WordClock
@@ -11,6 +12,8 @@ class WordClock
 	inline static var CONTROLS_WIDTH = 640;
 	inline static var CONTROLS_HEIGHT = 480;
 	inline static var CONTROLS_SPACING = CONTROLS_HEIGHT/48;
+	inline static var SET_FOREGROUND = 0;
+	inline static var SET_BACKGROUND = 1;
 	
 	static var clockTimer:Timer;
 	static var s:flash.display.MovieClip;
@@ -48,24 +51,29 @@ class WordClock
 	static var bg_red;
 	static var bg_green;
 	static var bg_blue;
+	static var fg_red;
+	static var fg_green;
+	static var fg_blue;
+	static var label_setColor:TextField = new TextField();
+	static var label_foreground:TextField = new TextField();
+	static var label_background:TextField = new TextField();
+	static var set_text_color_tracker;
 	
-	static var bg_color;
-	static var fg_color;
 	static var colors = new Array();
 	
 	
 	static var mcArray = new Array();
-	static var tracker;
 	
     static function main() {
 		
-		tracker = 0;
-		//bg_color = 0;
+		set_text_color_tracker = SET_BACKGROUND;
 		bg_red = 255;
 		bg_green = 255;
 		bg_blue = 255;
-		fg_color = 4;
-		
+		fg_red = 255;
+		fg_green = 0;
+		fg_blue = 0;
+				
 		colors = [0xFFFFFF,0xC0C0C0,0x808080,0x000000,0xFF0000,0x808000,0x00FF00,0x008000,0x00FFFF,0x008080,0x0000FF,0x000080,0xFF00FF,0x800080];
 		
 		mc_background.graphics.beginFill(rgb2hex(bg_red,bg_green,bg_blue));
@@ -74,7 +82,7 @@ class WordClock
         
         flash.Lib.current.addChild(mc_background);
 		
-		mcArray = [mc_it,mc_one,mc_two,mc_three,mc_four,mc_five_hours,mc_seven,mc_six,mc_eight,mc_nine,mc_ten_hours,mc_eleven,mc_twelve,mc_is,mc_half,mc_ten,mc_quarter,mc_twenty,mc_five,mc_minutes,mc_past,mc_to,mc_oclock];		
+		mcArray = [mc_it,mc_one,mc_two,mc_three,mc_four,mc_five_hours,mc_six,mc_seven,mc_eight,mc_nine,mc_ten_hours,mc_eleven,mc_twelve,mc_is,mc_half,mc_ten,mc_quarter,mc_twenty,mc_five,mc_minutes,mc_past,mc_to,mc_oclock];		
         
         createMC(mc_it,0,0,130,76);
         createMC(mc_is,195,0,115,76);
@@ -111,7 +119,11 @@ class WordClock
         clockTimer.addEventListener(TimerEvent.TIMER, updateTime);
         clockTimer.start();
         
-        //Controls
+        /****************************
+         * Controls					*
+         * **************************/
+        
+        //Control panel
         controls.graphics.lineStyle(2,0x000000);
         controls.graphics.beginFill(0xC0C0C0);
         controls.graphics.drawRoundRect(CONTROLS_X,CONTROLS_Y,CONTROLS_WIDTH,CONTROLS_HEIGHT,CONTROLS_SPACING,CONTROLS_SPACING);
@@ -123,7 +135,8 @@ class WordClock
         controls.graphics.lineTo(CONTROLS_X+CONTROLS_WIDTH -CONTROLS_SPACING,CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*13));
         controls.graphics.endFill();
         flash.Lib.current.addChild(controls);
-
+		
+		//X icon to close control panel
 		close_controls.graphics.lineStyle(2,0x000000);
 		close_controls.graphics.beginFill(0x808080);
 		close_controls.graphics.drawRoundRect(CONTROLS_X+CONTROLS_WIDTH-5*CONTROLS_SPACING,CONTROLS_Y+CONTROLS_SPACING,CONTROLS_SPACING*4,CONTROLS_SPACING*4,CONTROLS_SPACING,CONTROLS_SPACING);
@@ -134,28 +147,83 @@ class WordClock
 		close_controls.graphics.endFill();
 		controls.addChild(close_controls);
 		
+		//Sliders for RGB color control
+		red_button.graphics.lineStyle(1,0x000000);
 		red_button.graphics.beginFill(0xFF0000);
         red_button.graphics.drawRect(CONTROLS_X+CONTROLS_SPACING,CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*15),CONTROLS_SPACING*4,CONTROLS_SPACING*4);
         red_button.graphics.endFill();
         red_button.buttonMode = true;
-        red_button.x = setSliderPosition(bg_red); //Load slider position from settings here
+        red_button.x = getSliderPosition(bg_red); //Load slider position from settings here
         controls.addChild(red_button);
-		       
+		
+		green_button.graphics.lineStyle(1,0x000000);       
         green_button.graphics.beginFill(0x00FF00);
         green_button.graphics.drawRect(CONTROLS_X+CONTROLS_SPACING,CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*10),CONTROLS_SPACING*4,CONTROLS_SPACING*4);
         green_button.graphics.endFill();
         green_button.buttonMode = true;
-        green_button.x = setSliderPosition(bg_green); //Load slider position from settings here
+        green_button.x = getSliderPosition(bg_green); //Load slider position from settings here
         controls.addChild(green_button);
         
+        blue_button.graphics.lineStyle(1,0x000000);
         blue_button.graphics.beginFill(0x0000FF);
         blue_button.graphics.drawRect(CONTROLS_X+CONTROLS_SPACING,CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*5),CONTROLS_SPACING*4,CONTROLS_SPACING*4);
         blue_button.graphics.endFill();
         blue_button.buttonMode = true;
-        blue_button.x = setSliderPosition(bg_blue); //Load slider position from settings here
+        blue_button.x = getSliderPosition(bg_blue); //Load slider position from settings here
         controls.addChild(blue_button);
         
-        controls.visible = false; //Hide controls at start-up
+        //Text displayed on panel
+        var textFormat:flash.text.TextFormat = new flash.text.TextFormat();
+        textFormat.font = "LiberationSerif";
+        textFormat.size = CONTROLS_SPACING*3;
+        textFormat.align = flash.text.TextFormatAlign.CENTER;
+        
+        
+        label_setColor.defaultTextFormat = textFormat;
+        label_setColor.text = "Set Color:";
+        label_setColor.x = CONTROLS_X+CONTROLS_SPACING;
+        label_setColor.y = CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*20);
+        label_setColor.width = (CONTROLS_WIDTH-2*CONTROLS_SPACING)/3;
+        controls.addChild(label_setColor);
+        
+        label_foreground.defaultTextFormat = textFormat;
+        label_foreground.text = "Foreground";
+        label_foreground.x = CONTROLS_X+CONTROLS_SPACING + (CONTROLS_WIDTH-2*CONTROLS_SPACING)/3;
+        label_foreground.y = CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*20);
+        label_foreground.width = (CONTROLS_WIDTH-2*CONTROLS_SPACING)/3 - CONTROLS_SPACING;
+        label_foreground.height = CONTROLS_SPACING*4;
+        label_foreground.borderColor = 0x000000;
+        label_foreground.backgroundColor = 0x808080;
+        label_foreground.border = false;
+        label_foreground.background = false;
+        controls.addChild(label_foreground);
+        
+        label_background.defaultTextFormat = textFormat;
+        label_background.text = "Background";
+        label_background.x = CONTROLS_X+CONTROLS_SPACING + 2*((CONTROLS_WIDTH-2*CONTROLS_SPACING)/3);
+        label_background.y = CONTROLS_HEIGHT+CONTROLS_Y-(CONTROLS_SPACING*20);
+        label_background.width = (CONTROLS_WIDTH-2*CONTROLS_SPACING)/3 - CONTROLS_SPACING/2;
+        label_background.height = CONTROLS_SPACING*4;
+        label_background.borderColor = 0x000000;
+        label_background.backgroundColor = 0x808080;
+        label_background.border = true;
+        label_background.background = true;
+        controls.addChild(label_background);
+        /*
+        var f:flash.text.TextFormat = label_background.getTextFormat();
+        var maxTextWidth = label_background.width;
+        label_background.width = 1000;
+        trace(maxTextWidth);
+        while (label_background.textWidth > maxTextWidth){
+			trace(label_background.textWidth);
+			f.size = Std.int(f.size)-1;
+			label_background.setTextFormat(f);
+		}
+		label_background.width = maxTextWidth;
+		* */
+        
+        //Hide controls at start-up
+        controls.visible = false; 
                
         //listen for mouse events
         flash.Lib.current.addEventListener(MouseEvent.MOUSE_DOWN, onMouseDownhandler);
@@ -163,7 +231,7 @@ class WordClock
     }
     
     static function createMC(mc:MovieClip,x,y,width,height){
-        mc.graphics.beginFill(colors[fg_color]);
+        mc.graphics.beginFill(rgb2hex(fg_red,fg_green,fg_blue));
         mc.graphics.drawRect(x,y,width,height);
         mc.graphics.endFill();
         mc.visible = false;
@@ -269,29 +337,74 @@ class WordClock
 		mc_background.transform.colorTransform = newColorTransform;
 	}
 	
+	static function changeFGcolor(hexColor){
+		for (mc in mcArray){
+			var newColorTransform:flash.geom.ColorTransform = mc.transform.colorTransform;
+			newColorTransform.color = hexColor;
+			mc.transform.colorTransform = newColorTransform;
+		}
+	}
+	
 	static function onNewFrame(slider:MovieClip) : Dynamic {
-		//if (slider == blue_button){
 			return function(event:Event){
 				var cents = (slider.x*100)/(CONTROLS_WIDTH-6*CONTROLS_SPACING);
 				var color_index = Math.round((255*cents)/100);
-			
-				if (slider == blue_button){
-					bg_blue = color_index;
-					changeBGcolor(rgb2hex(bg_red,bg_green,bg_blue)); //Blue
-				}
-				else if (slider == green_button) {
-					bg_green = color_index;
-					changeBGcolor(rgb2hex(bg_red,bg_green,bg_blue)); //Green
+				if (set_text_color_tracker == SET_FOREGROUND){
+					if (slider == blue_button){
+						fg_blue = color_index;
+						changeFGcolor(rgb2hex(fg_red,fg_green,fg_blue)); //Blue
+					}
+					else if (slider == green_button) {
+						fg_green = color_index;
+						changeFGcolor(rgb2hex(fg_red,fg_green,fg_blue)); //Green
+					}
+					else {
+						fg_red = color_index;
+						changeFGcolor(rgb2hex(fg_red,fg_green,fg_blue)); //Red
+					}					
 				}
 				else {
-					bg_red = color_index;
-					changeBGcolor(rgb2hex(bg_red,bg_green,bg_blue)); //Red
+					if (slider == blue_button){
+						bg_blue = color_index;
+						changeBGcolor(rgb2hex(bg_red,bg_green,bg_blue)); //Blue
+					}
+					else if (slider == green_button) {
+						bg_green = color_index;
+						changeBGcolor(rgb2hex(bg_red,bg_green,bg_blue)); //Green
+					}
+					else {
+						bg_red = color_index;
+						changeBGcolor(rgb2hex(bg_red,bg_green,bg_blue)); //Red
+					}
 				}
 			}		
 	}
 	
-	static function setSliderPosition(colorValue){
+	static function getSliderPosition(colorValue){
 		return (((colorValue*100)/255)*(CONTROLS_WIDTH-(6*CONTROLS_SPACING)))/100;
+	}
+	
+	static function setTextColorSelector(foregroundOrBackground){
+		if (foregroundOrBackground == SET_FOREGROUND) {
+			set_text_color_tracker = SET_FOREGROUND;
+			label_foreground.background = true;
+			label_foreground.border = true;
+			label_background.background = false;
+			label_background.border = false;
+			red_button.x = getSliderPosition(fg_red);
+			green_button.x = getSliderPosition(fg_green);
+			blue_button.x = getSliderPosition(fg_blue);
+		}
+		else {
+			set_text_color_tracker = SET_BACKGROUND;
+			label_foreground.background = false;
+			label_foreground.border = false;
+			label_background.background = true;
+			label_background.border = true;
+			red_button.x = getSliderPosition(bg_red);
+			green_button.x = getSliderPosition(bg_green);
+			blue_button.x = getSliderPosition(bg_blue);
+		}
 	}
 	
 	static function onMouseDownhandler (event:MouseEvent){
@@ -316,11 +429,19 @@ class WordClock
 			controls.visible = false;
 		}
 		
+		else if (event.target == label_foreground){
+			setTextColorSelector(SET_FOREGROUND);
+		}
+		else if (event.target == label_background){
+			setTextColorSelector(SET_BACKGROUND);
+		}
+		
 
 	}
 	
 	static function onMouseUphandler (event:Event){
-		blue_button.stopDrag();
-		blue_button.removeEventListener(Event.ENTER_FRAME, onNewFrame(event.target));
+		//trace(event.target.type);
+		controls.stopDrag();
+		//blue_button.removeEventListener(Event.ENTER_FRAME, onNewFrame(cast(event.target)));
 	}
 }
