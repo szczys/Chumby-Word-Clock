@@ -285,6 +285,9 @@ class WordClock
 			else if (minutes < 20) {
 				showMC(mc_quarter);
 			}
+			else if (minutes < 25) {
+				showMC(mc_twenty);
+				showMC(mc_minutes);
 			else if (minutes < 30) {
 				showMC(mc_twenty);
 				showMC(mc_five);
